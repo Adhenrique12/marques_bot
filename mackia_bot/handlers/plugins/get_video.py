@@ -7,13 +7,12 @@ import os
 from handlers.tools import convert_size, clear
 
 convert = convert_size.convert_size
-clean = clear.clear()
 
 
 
 @events.register(events.NewMessage(pattern='/down (.+)'))
 async def handler(event):
-    clean()
+    clear.clear()
     entity = await event.get_chat()
     client = event.client
     url = event.pattern_match.group(1)
@@ -78,7 +77,5 @@ async def handler(event):
                            )
             )
     await client.delete_messages(entity, msg)
-    clean()
-
     os.remove(video_file)
     os.remove(output_file)
