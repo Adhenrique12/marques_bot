@@ -1,0 +1,8 @@
+services:
+ app:
+  build: .
+  volumes:
+   - .:/mackiabot
+  image: app:mackiaxyzbot
+  container_name: maquia_container
+  command: python main.py
