@@ -4,7 +4,8 @@ import yt_dlp
 import ffmpeg
 import subprocess
 import os
-from handlers.tools import convert_size, clear
+from handlers.tools import convert_size, clear, convert_video
+
 
 convert = convert_size.convert_size
 
@@ -29,9 +30,9 @@ async def handler(event):
         video_file = ydl.prepare_filename(info)
 
     # Convert video to MP4 format suitable for Telegram
-    msg = await client.edit_message(entity, msg.id, text="Converting ...")
+    await convert_video.convert_video(client, entity, msg, video_file)
     output_file = 'output.mp4'
-    subprocess.run(['ffmpeg', '-i', video_file, '-c:v', 'libx264', '-c:a', 'aac', '-strict', 'experimental', output_file])
+    
 
     probe = ffmpeg.probe(output_file)
     video_streams = [stream for stream in probe['streams'] if stream['codec_type'] == 'video']

@@ -1,37 +1,39 @@
-import ffmpeg
+import asyncio
+import subprocess
 
-def convert_video(input_file):
-    output_file = "output.mp4"
+async def convert_video(client, entity, msg, video_file):
     try:
-        # Get video metadata
-        probe = ffmpeg.probe(input_file)
-        video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
-        audio_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'audio'), None)
-        # If the video width is greater than 640, then convert
-        if video_stream is not None and video_stream['width'] > 640:
-            (
-                ffmpeg
-                .input(input_file)
-                #.filter('scale', 640, -2)
-                .output(output_file, vcodec='libx264', acodec='copy', movflags='faststart', r=30, map='0', preset='ultrafast', crf=30)
-                .run(overwrite_output=True)
-            )
+        msg = await client.edit_message(entity, msg.id, text="Converting ...")
+        output_file = 'output.mp4'
+        
+        # Run ffmpeg asynchronously with your specified command
+        process = await asyncio.create_subprocess_exec(
+            'ffmpeg', '-i', video_file, '-max_muxing_queue_size', '9999', '-c:v', 'libx264', '-crf', '28', 
+            '-maxrate', '3M', '-preset', 'ultrafast', '-flags', '+global_header', '-pix_fmt', 'yuv420p', 
+            '-profile:v', 'baseline', '-movflags', '+faststart', '-c:a', 'aac', '-ac', '2', output_file,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+
+        # Track progress
+        while True:
+            line = await process.stderr.readline()
+            if not line:
+                break
+            # Update progress message here if needed
+            print(line.decode('utf-8').strip())
+
+        await process.wait()
+
+        if process.returncode == 0:
+            await client.edit_message(entity, msg.id, text="Conversion successful!")
         else:
-            # Check if the input is a GIF
-            if video_stream['codec_name'] == 'gif':
-                (
-                    ffmpeg
-                    .input(input_file)
-                    .output(output_file, vcodec='libx264', acodec='aac' if audio_stream else None)
-                    .run(overwrite_output=True)
-                )
-            else:
-                (
-                    ffmpeg
-                    .input(input_file)
-                    .output(output_file, vcodec='copy', acodec='copy', movflags='faststart', r=30, map='0', preset='ultrafast')
-                    .run(overwrite_output=True)
-                )
-    except ffmpeg.Error as e:
-        print(f"An error occurred during video conversion: {e.stderr.decode('utf-8')}")
+            await client.edit_message(entity, msg.id, text="Conversion failed!")
+
+    except Exception as e:
+        await client.edit_message(entity, msg.id, text=f"An error occurred: {str(e)}")
+
+# Usage
+# await convert_video(client, entity, msg, video_file)
+
 
