@@ -1,24 +1,28 @@
 import yt_dlp
-import os
 
-def download_video_ydl(link: str) -> None:
+async def download_video_ydl(url: str, event, client, entity) -> None:
     """
     Downloads a video from a link
     """
-    os.system("yt-dlp --rm-cache-dir")
+    msg = await event.respond('Downloading video ...')
+
     ydl_opts = {
-        "outtmpl": "video.mp4",
-        "format": "bestvideo+bestaudio/best",
-        "merge_output_format": "mp4",
-        "nocheckcertificate": True,
-        "quiet": True,
-        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
-        "socket_timeout": 10 
+        'format' : 'best',
+        'outtmpl' : '%(title)s.%(ext)s',
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([link])
-        print("Download complete")
+            info = await ydl.extract_info(url, download=True)
+            return await ydl.prepare_filename(info), info
+        
+        await client.edit_message(entity, msg.id, text="Download successful!")
     except Exception as e:
-        print(f"Error occurred during download: {str(e)}")
+        await client.edit_message(entity, msg.id, text="Error occurred during download: {str(e)}")
+
+
+        
+
+    
+
+    

@@ -1,14 +1,10 @@
 from telethon import events
 from telethon.tl.types import DocumentAttributeVideo
-import yt_dlp
-import ffmpeg
-import subprocess
 import os
-from handlers.tools import convert_size, clear, convert_video
+from handlers.tools import convert_size, clear, convert_video, download_video, info_video
 
 
 convert = convert_size.convert_size
-
 
 
 @events.register(events.NewMessage(pattern='/down (.+)'))
@@ -18,31 +14,15 @@ async def handler(event):
     client = event.client
     url = event.pattern_match.group(1)
 
-    msg = await event.respond('Downloading video ...')
-
-    ydl_opts = {
-        'format' : 'best',
-        'outtmpl' : '%(title)s.%(ext)s',
-    }
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        video_file = ydl.prepare_filename(info)
-
-    # Convert video to MP4 format suitable for Telegram
-    await convert_video.convert_video(client, entity, msg, video_file)
-    output_file = 'output.mp4'
+    # Download video and get the info(for the name)
+    video_file, info = await download_video.download_video_ydl(url, event, client, entity)
     
 
-    probe = ffmpeg.probe(output_file)
-    video_streams = [stream for stream in probe['streams'] if stream['codec_type'] == 'video']
-    if not video_streams:
-        raise ValueError('No video stream found')
-
-    video_stream = video_streams[0]
-    width = int(video_stream['width'])
-    height = int(video_stream['height'])
-    duration = float(probe['format']['duration'])
+    # Convert video to MP4 format suitable for Telegram
+    output_file = await convert_video.convert_video(client, entity, msg, video_file)
+    
+    # Get info for telegram stream video player
+    width, height, duration = await info_video.info_video(output_file)
 
     msg = await client.edit_message(entity, msg.id, text="Uploading ...")
 

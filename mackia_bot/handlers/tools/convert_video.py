@@ -1,5 +1,4 @@
 import asyncio
-import subprocess
 
 async def convert_video(client, entity, msg, video_file):
     try:
@@ -27,6 +26,7 @@ async def convert_video(client, entity, msg, video_file):
 
         if process.returncode == 0:
             await client.edit_message(entity, msg.id, text="Conversion successful!")
+            return output_file
         else:
             await client.edit_message(entity, msg.id, text="Conversion failed!")
 
