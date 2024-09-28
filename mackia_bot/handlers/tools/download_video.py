@@ -45,4 +45,4 @@ async def download_video_ydl(url: str,format_id: str, event, client, entity):
             await client.delete_messages(entity, msg)
             return filename, info
     except Exception as e:
-        await client.edit_message(entity, msg.id, text=f"Error occurred during download: {str(e)}")
+        print(f"Error occurred during download: {str(e)}")
